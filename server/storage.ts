@@ -1,38 +1,58 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
+import { db } from "./db";
+import {
+  adhkar,
+  sessions,
+  type InsertDhikr,
+  type Dhikr,
+  type InsertSession,
+  type Session,
+  type UpdateDhikrRequest
+} from "@shared/schema";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  getAdhkar(): Promise<Dhikr[]>;
+  getDhikr(id: number): Promise<Dhikr | undefined>;
+  createDhikr(dhikr: InsertDhikr): Promise<Dhikr>;
+  updateDhikr(id: number, updates: UpdateDhikrRequest): Promise<Dhikr | undefined>;
+  deleteDhikr(id: number): Promise<void>;
+  
+  getSessions(): Promise<Session[]>;
+  createSession(session: InsertSession): Promise<Session>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
+export class DatabaseStorage implements IStorage {
+  async getAdhkar(): Promise<Dhikr[]> {
+    return await db.select().from(adhkar);
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async getDhikr(id: number): Promise<Dhikr | undefined> {
+    const [dhikr] = await db.select().from(adhkar).where(eq(adhkar.id, id));
+    return dhikr;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async createDhikr(dhikr: InsertDhikr): Promise<Dhikr> {
+    const [newDhikr] = await db.insert(adhkar).values(dhikr).returning();
+    return newDhikr;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  async updateDhikr(id: number, updates: UpdateDhikrRequest): Promise<Dhikr | undefined> {
+    const [updated] = await db.update(adhkar).set(updates).where(eq(adhkar.id, id)).returning();
+    return updated;
+  }
+
+  async deleteDhikr(id: number): Promise<void> {
+    await db.delete(adhkar).where(eq(adhkar.id, id));
+  }
+
+  async getSessions(): Promise<Session[]> {
+    return await db.select().from(sessions).orderBy(desc(sessions.timestamp));
+  }
+
+  async createSession(session: InsertSession): Promise<Session> {
+    const [newSession] = await db.insert(sessions).values(session).returning();
+    return newSession;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
