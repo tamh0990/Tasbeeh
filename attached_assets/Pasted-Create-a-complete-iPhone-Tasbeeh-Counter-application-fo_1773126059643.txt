@@ -1,0 +1,185 @@
+Create a **complete iPhone Tasbeeh Counter application** for Muslims. The **entire app interface must be in Arabic**, including all buttons, labels, messages, and settings. The design should feel modern, clean, and consistent with native iOS apps while reflecting a calm Islamic aesthetic.
+
+The application must be built using **SwiftUI** and should support **all iPhone screen sizes and resolutions**, including small screens and large models (such as iPhone SE, standard models, Pro, and Pro Max). The layout must use **responsive design techniques (Auto Layout / SwiftUI adaptive layout)** so the interface scales properly across all devices.
+
+General Requirements:
+
+* The app language is Arabic.
+* Interface must support **Right-to-Left (RTL)** layout correctly.
+* Use **SwiftUI adaptive layouts** (GeometryReader, VStack, HStack, Spacer, etc.) to ensure compatibility with all screen sizes.
+* Support **Light Mode and Dark Mode**.
+* The app should run smoothly and be optimized for performance.
+* Use **SF Symbols** where appropriate for icons.
+* Ensure the app works on **recent iOS versions** (iOS 16+ or newer).
+
+Main Features:
+
+1. Main Counter Screen:
+
+This is the primary screen of the app.
+
+Elements:
+
+* A **large circular tap button** in the center of the screen used for counting.
+* Each tap increases the counter by 1.
+* Display the **current count in very large Arabic numerals**.
+* Show the **selected dhikr above the counter**.
+* Provide a **smooth tap animation** when the button is pressed.
+* Add **optional haptic feedback** on each tap.
+
+Layout behavior:
+
+* The counter must remain centered on all screen sizes.
+* Text must scale using Dynamic Type or responsive font sizing.
+
+Example UI layout:
+
+Top section:
+اسم الذكر الحالي
+
+Center:
+زر دائري كبير للضغط
+الرقم الحالي للعداد
+
+Bottom:
+زر إعادة التعيين
+زر تغيير الذكر
+زر الإعدادات
+
+2. Dhikr Selection Screen:
+
+Create a separate screen where the user can choose the dhikr.
+
+Default adhkar list:
+
+* سبحان الله
+* الحمد لله
+* الله أكبر
+* لا إله إلا الله
+* سبحان الله وبحمده
+* سبحان الله العظيم
+
+Features:
+
+* Tap any dhikr to start counting it.
+* Ability to **add a custom dhikr**.
+* Ability to **delete or edit custom adhkar**.
+* Display a small counter showing how many times that dhikr was completed historically.
+
+3. Reset Counter:
+
+Add a reset button on the main screen.
+
+Behavior:
+
+* When pressed, show a confirmation dialog in Arabic:
+  "هل تريد تصفير العداد؟"
+* If confirmed, reset the counter to zero.
+* Reset should include a subtle animation.
+
+4. Milestones System:
+
+Add optional milestone reminders.
+
+Examples:
+
+* Vibrate or highlight when reaching:
+
+  * 33
+  * 66
+  * 99
+  * 100
+* Show a small congratulatory message:
+  "أكملت ٣٣ تسبيحة"
+
+Allow users to enable/disable milestone notifications.
+
+5. Statistics Screen:
+
+Create a statistics page that displays user progress.
+
+Include:
+
+* Total tasbeeh count
+* Daily tasbeeh count
+* Weekly summary
+* Most used dhikr
+
+Display data using simple charts or progress bars.
+
+6. Session Tracking:
+
+Each counting session should be stored.
+
+A session contains:
+
+* Dhikr name
+* Total count
+* Date and time
+
+Users can view previous sessions in a history list.
+
+7. Settings Screen:
+
+Create a settings page with the following options:
+
+* تشغيل / إيقاف الاهتزاز
+* تشغيل / إيقاف التنبيه عند 33 أو 100
+* الوضع الداكن
+* إعادة ضبط جميع البيانات
+* معلومات التطبيق
+
+8. Data Storage:
+
+Use **local storage** to save data:
+
+* Current counter
+* Selected dhikr
+* Statistics
+* Session history
+
+Data must persist even if the app closes.
+
+Suggested technologies:
+
+* UserDefaults (for simple values)
+* CoreData or local database (for session history)
+
+9. Accessibility:
+
+The app must support:
+
+* Dynamic text sizes
+* VoiceOver compatibility
+* High contrast readability
+
+10. Visual Design Guidelines:
+
+Color palette suggestions:
+
+* Dark Green
+* Gold accents
+* White / Light background
+* Dark background for night mode
+
+Typography:
+
+* Clear Arabic-friendly font
+* Large numbers for easy readability
+
+Design principles:
+
+* Minimalist
+* Calm and distraction-free
+* Comfortable for long dhikr sessions
+
+11. Performance and Usability:
+
+* The tap button must respond instantly with no lag.
+* App must support **one-handed use**.
+* Interface must remain clean and uncluttered.
+* Animations should be smooth but subtle.
+
+Final Goal:
+
+Produce a **fully structured iOS Tasbeeh Counter app design and implementation plan** with clear components, screens, and logic so developers or AI coding tools can generate the full working application easily.
