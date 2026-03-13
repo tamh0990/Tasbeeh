@@ -1,13 +1,43 @@
 import { useState } from "react";
-import { Plus, Trash2, Check, Search } from "lucide-react";
+import { Plus, Trash2, Check } from "lucide-react";
 import { motion } from "framer-motion";
 import { MobileLayout } from "@/components/layout";
 import { usePreferences, toArabicNumerals } from "@/hooks/use-preferences";
 import { useAdhkar, useCreateDhikr, useDeleteDhikr } from "@/hooks/use-adhkar";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+
+const VIRTUES: Record<string, { repetition: string; virtue: string }> = {
+  "سبحان الله": {
+    repetition: "١٠٠ مرة قبل طلوع الشمس وقبل غروبها",
+    virtue: "كان أفضل من مئة بدنة",
+  },
+  "الحمد لله": {
+    repetition: "١٠٠ مرة قبل طلوع الشمس وقبل غروبها",
+    virtue: "كان أفضل من مئة فرس يُحمل عليها في سبيل الله",
+  },
+  "الله أكبر": {
+    repetition: "١٠٠ مرة قبل طلوع الشمس وقبل غروبها",
+    virtue: "كان أفضل من عتق مئة رقبة",
+  },
+  "لا إله إلا الله": {
+    repetition: "١٠٠ مرة قبل طلوع الشمس وقبل غروبها",
+    virtue: "لم يأت أحد يوم القيامة بعمل أفضل منه إلا من قال مثل قوله أو زاد عليه",
+  },
+  "لا إله إلا الله وحده لا شريك له له الملك وله الحمد وهو على كل شيء قدير": {
+    repetition: "١٠٠ مرة قبل طلوع الشمس وقبل غروبها",
+    virtue: "لم يأت أحد يوم القيامة بعمل أفضل منه إلا من قال مثل قوله أو زاد عليه",
+  },
+  "سبحان الله وبحمده": {
+    repetition: "١٠٠ مرة في اليوم",
+    virtue: "حُطَّت خطاياه وإن كانت مثل زبد البحر",
+  },
+  "سبحان الله العظيم": {
+    repetition: "يُكثر منها",
+    virtue: "كلمة حبيبة إلى الرحمن خفيفة على اللسان ثقيلة في الميزان",
+  },
+};
 
 export default function DhikrList() {
   const { data: adhkar, isLoading } = useAdhkar();
@@ -16,19 +46,12 @@ export default function DhikrList() {
   const { mutate: deleteDhikr } = useDeleteDhikr();
   const { toast } = useToast();
 
-  const [search, setSearch] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [newDhikrText, setNewDhikrText] = useState("");
 
-  const filteredAdhkar = adhkar?.filter(a => a.text.includes(search)) || [];
-
   const handleSelect = (id: number) => {
-    updatePrefs({ activeDhikrId: id, currentCount: 0 }); // Reset current count when changing
-    toast({
-      title: "تم تغيير الذكر",
-      description: "تم تصفير العداد للذكر الجديد",
-      duration: 2000,
-    });
+    updatePrefs({ activeDhikrId: id, currentCount: 0 });
+    toast({ title: "تم تغيير الذكر", description: "تم تصفير العداد للذكر الجديد", duration: 2000 });
   };
 
   const handleAddCustom = () => {
@@ -46,98 +69,117 @@ export default function DhikrList() {
   };
 
   const handleDelete = (id: number, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent selection
+    e.stopPropagation();
     if (prefs.activeDhikrId === id) {
       toast({ title: "لا يمكن حذف الذكر النشط", variant: "destructive" });
       return;
     }
-    deleteDhikr(id, {
-      onSuccess: () => toast({ title: "تم الحذف بنجاح" })
-    });
+    deleteDhikr(id, { onSuccess: () => toast({ title: "تم الحذف بنجاح" }) });
   };
 
   return (
-    <MobileLayout title="قائمة الأذكار">
-      <div className="p-4 flex flex-col gap-4">
-        
-        {/* Search & Add Bar */}
-        <div className="flex gap-2 relative z-10">
-          <div className="relative flex-1">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input 
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="ابحث عن ذكر..." 
-              className="pl-4 pr-10 py-6 rounded-2xl bg-card border-border/50 shadow-sm text-base focus-visible:ring-primary"
-            />
-          </div>
-          <Button 
-            onClick={() => setShowAddDialog(true)}
-            className="w-14 h-[50px] rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-md shrink-0"
-          >
-            <Plus className="w-6 h-6" />
-          </Button>
-        </div>
+    <MobileLayout title="الأذكار وفضائلها">
+      <div className="p-4 pb-8 flex flex-col gap-4">
 
-        {/* List */}
-        <div className="flex flex-col gap-3 pb-8">
+        {/* Add Custom Button */}
+        <Button
+          onClick={() => setShowAddDialog(true)}
+          data-testid="button-add-dhikr"
+          className="w-full rounded-2xl h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-base shadow-md flex items-center justify-center gap-2"
+        >
+          <Plus className="w-5 h-5" />
+          إضافة ذكر مخصص
+        </Button>
+
+        {/* Adhkar Cards */}
+        <div className="flex flex-col gap-4">
           {isLoading ? (
             [...Array(5)].map((_, i) => (
-              <div key={i} className="h-24 bg-card rounded-2xl animate-pulse"></div>
+              <div key={i} className="h-32 bg-card rounded-3xl animate-pulse"></div>
             ))
-          ) : filteredAdhkar.length === 0 ? (
-            <div className="text-center py-10 text-muted-foreground">
-              لا توجد نتائج مطابقة
-            </div>
           ) : (
-            filteredAdhkar.map((dhikr, index) => {
+            adhkar?.map((dhikr, index) => {
               const isActive = prefs.activeDhikrId === dhikr.id;
-              
+              const virtueInfo = VIRTUES[dhikr.text];
+
               return (
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
+                  transition={{ delay: index * 0.04 }}
                   key={dhikr.id}
                   onClick={() => handleSelect(dhikr.id)}
+                  data-testid={`card-dhikr-${dhikr.id}`}
                   className={`
-                    relative p-5 rounded-2xl cursor-pointer transition-all duration-300 border
-                    ${isActive 
-                      ? 'bg-primary/5 border-primary shadow-md' 
-                      : 'bg-card border-border/40 hover:border-primary/30 shadow-sm hover:shadow-md'}
+                    relative rounded-3xl cursor-pointer transition-all duration-300 border overflow-hidden shadow-sm
+                    ${isActive
+                      ? 'bg-primary/5 border-primary shadow-md'
+                      : 'bg-card border-border/40 hover:border-primary/30 hover:shadow-md'}
                   `}
                 >
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-bold font-serif text-foreground leading-relaxed">
-                        {dhikr.text}
-                      </h3>
-                      <p className="text-sm text-muted-foreground mt-2 font-medium">
+                  {/* Active badge */}
+                  {isActive && (
+                    <div className="absolute top-3 left-3 bg-primary text-primary-foreground p-1 rounded-full shadow-sm z-10">
+                      <Check className="w-4 h-4" />
+                    </div>
+                  )}
+
+                  {/* Delete button for custom dhikr */}
+                  {dhikr.isCustom && !isActive && (
+                    <button
+                      onClick={(e) => handleDelete(dhikr.id, e)}
+                      data-testid={`button-delete-dhikr-${dhikr.id}`}
+                      className="absolute top-3 left-3 text-muted-foreground hover:text-destructive p-1.5 rounded-full hover:bg-destructive/10 transition-colors z-10"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+
+                  <div className="p-5">
+                    {/* Dhikr text */}
+                    <h3 className="text-xl font-bold font-serif text-foreground leading-relaxed mb-3 pl-8">
+                      {dhikr.text}
+                    </h3>
+
+                    {virtueInfo ? (
+                      <>
+                        {/* Divider */}
+                        <div className="h-px bg-border/50 mb-3" />
+
+                        {/* Repetition */}
+                        <p className="text-sm text-primary font-semibold mb-1 flex items-center gap-1.5">
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary"></span>
+                          {virtueInfo.repetition}
+                        </p>
+
+                        {/* Virtue */}
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {virtueInfo.virtue}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        المجموع: <span className="arabic-numbers font-bold text-foreground">{toArabicNumerals(dhikr.historicalCount)}</span>
+                      </p>
+                    )}
+
+                    {virtueInfo && (
+                      <p className="text-xs text-muted-foreground/70 mt-3 text-left">
                         المجموع: <span className="arabic-numbers">{toArabicNumerals(dhikr.historicalCount)}</span>
                       </p>
-                    </div>
-                    
-                    <div className="flex flex-col items-center gap-3 shrink-0">
-                      {isActive && (
-                        <div className="bg-primary text-primary-foreground p-1.5 rounded-full shadow-sm">
-                          <Check className="w-5 h-5" />
-                        </div>
-                      )}
-                      
-                      {dhikr.isCustom && !isActive && (
-                        <button 
-                          onClick={(e) => handleDelete(dhikr.id, e)}
-                          className="text-muted-foreground hover:text-destructive p-2 rounded-full hover:bg-destructive/10 transition-colors"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </motion.div>
               );
             })
           )}
+        </div>
+
+        {/* Reference Note */}
+        <div className="mt-2 px-4 py-3 rounded-2xl bg-secondary/40 border border-border/30 text-center">
+          <p className="text-xs text-muted-foreground font-medium">
+            حديث حسن – صحيح الترغيب والترهيب
+          </p>
         </div>
       </div>
 
@@ -152,19 +194,20 @@ export default function DhikrList() {
               value={newDhikrText}
               onChange={(e) => setNewDhikrText(e.target.value)}
               placeholder="اكتب الذكر هنا..."
+              data-testid="input-new-dhikr"
               className="w-full min-h-[120px] p-4 rounded-xl bg-secondary/30 border border-border text-foreground text-lg font-serif focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
               dir="rtl"
             />
           </div>
           <DialogFooter className="flex gap-2 sm:justify-start">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="flex-1 rounded-xl"
               onClick={() => setShowAddDialog(false)}
             >
               إلغاء
             </Button>
-            <Button 
+            <Button
               className="flex-1 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
               onClick={handleAddCustom}
               disabled={isCreating || !newDhikrText.trim()}

@@ -1,0 +1,143 @@
+Update and improve the existing iPhone application called "مسبحة".
+
+Keep the current Arabic RTL design and layout but implement the following functional improvements and UI fixes.
+
+---
+
+1. Reset Button Behavior
+
+Update the reset button (تصفير) so that it resets BOTH:
+
+* the current tasbeeh counter
+* the total accumulated counter (المجموع الكلي)
+
+When the user presses reset, show a confirmation popup:
+
+"هل تريد تصفير العداد والمجموع الكلي؟"
+
+Buttons:
+
+* نعم
+* إلغاء
+
+---
+
+2. Edit Current Dhikr
+
+Add a feature that allows the user to change the current dhikr.
+
+Add a small button above the counter called:
+
+"تغيير الذكر"
+
+When pressed, open a list where the user can choose between:
+
+* سبحان الله
+* الحمد لله
+* الله أكبر
+* لا إله إلا الله وحده لا شريك له له الملك وله الحمد وهو على كل شيء قدير
+
+After selecting, the chosen dhikr becomes the active dhikr displayed above the counter.
+
+---
+
+3. Improve Adhkar Page Content
+
+Update the Adhkar page so it includes the following dhikr and their virtues.
+
+Each dhikr should appear inside a clean card UI showing:
+
+* the dhikr
+* repetition recommendation
+* virtue description
+
+Content to include:
+
+سبحان الله
+100 مرة قبل طلوع الشمس وقبل غروبها
+كان أفضل من مئة بدنة
+
+الحمد لله
+100 مرة قبل طلوع الشمس وقبل غروبها
+كان أفضل من مئة فرس يُحمل عليها في سبيل الله
+
+الله أكبر
+100 مرة قبل طلوع الشمس وقبل غروبها
+كان أفضل من عتق مئة رقبة
+
+لا إله إلا الله وحده لا شريك له له الملك وله الحمد وهو على كل شيء قدير
+100 مرة قبل طلوع الشمس وقبل غروبها
+لم يأت أحد يوم القيامة بعمل أفضل منه إلا من قال مثل قوله أو زاد عليه
+
+Add a small reference note at the bottom:
+
+حديث حسن – صحيح الترغيب والترهيب
+
+---
+
+4. Fix Settings Page Button Alignment
+
+Fix the UI issue where the first two toggle buttons in the settings page are not visually aligned.
+
+Apply the following improvements:
+
+• Each settings item should be displayed as a clean horizontal row
+• The toggle switch must be aligned consistently on the left side
+• The icon must be aligned on the right side
+• The text should be vertically centered
+
+---
+
+5. Improve Spacing
+
+Use consistent spacing and padding:
+
+* 16–20px padding inside cards
+* Equal spacing between icon, text, and toggle
+* All rows should have identical height
+
+---
+
+6. Improve Visual Consistency
+
+Ensure that:
+
+* All toggle switches use the same size
+* Icons have equal size and circular background
+* Rows are aligned using a clean grid layout
+
+---
+
+7. Improve Card Layout
+
+Group settings options inside clean rounded cards.
+
+Use:
+
+* subtle shadow
+* smooth spacing
+* modern iOS style layout
+
+---
+
+8. Follow iOS Design Guidelines
+
+Ensure the interface:
+
+* supports Arabic RTL layout correctly
+* follows Apple UI spacing standards
+* uses smooth animations and rounded cards
+* looks balanced on all iPhone screen sizes
+
+---
+
+9. Maintain Existing Features
+
+Do NOT remove existing features:
+
+* tasbeeh counter button
+* undo button
+* statistics page
+* dark mode
+* vibration and sound when reaching 100
+* morning and evening adhkar
