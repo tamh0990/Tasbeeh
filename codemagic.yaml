@@ -4,13 +4,23 @@ workflows:
     environment:
       xcode: latest
       node: latest
+
     scripts:
       - name: Install dependencies
         script: npm install
+
       - name: Build web app
         script: npm run build
+
+      - name: Install CocoaPods
+        script: |
+          cd ios/App
+          pod install
+          cd ../..
+
       - name: Sync Capacitor
         script: npx cap sync ios
+
       - name: Build iOS app
         script: |
           cd ios/App
@@ -19,5 +29,6 @@ workflows:
           -configuration Release \
           -sdk iphoneos \
           build
+
     artifacts:
       - ios/App/build/**/*
