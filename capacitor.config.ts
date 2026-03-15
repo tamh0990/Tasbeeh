@@ -1,18 +1,11 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.tasbeeh.msabha',
-  appName: 'مسبحة',
+  appId: 'com.tasbeeh.app',
+  appName: 'tasbeeh',
   webDir: 'dist/public',
   server: {
     androidScheme: 'https'
-  },
-  plugins: {
-    SplashScreen: {
-      launchShowDuration: 2000,
-      backgroundColor: '#1a4731',
-      showSpinner: false,
-    },
   },
 };
 
