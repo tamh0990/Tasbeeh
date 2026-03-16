@@ -8,7 +8,7 @@ workflows:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.harbi.tasbeeh
-        automatic_code_signing: true
+    
       vars:
         BUNDLE_ID: "com.harbi.tasbeeh"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
