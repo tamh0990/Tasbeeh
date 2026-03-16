@@ -14,6 +14,7 @@ workflows:
         BUNDLE_ID: "com.harbi.tasbeehapp"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
+        APPLE_DEVELOPER_TEAM_ID: "YTHCWB78HY"
       node: 20
       xcode: latest
       cocoapods: default
