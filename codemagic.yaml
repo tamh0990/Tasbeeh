@@ -10,7 +10,7 @@ workflows:
         bundle_identifier: com.harbi.tasbeehapp 
         
       vars:
-        BUNDLE_ID: "com.harbi.tasbeeh"
+        BUNDLE_ID: "com.harbi.tasbeehapp"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
         APPLE_DEVELOPER_TEAM_ID: "YTHCWB78HY"
