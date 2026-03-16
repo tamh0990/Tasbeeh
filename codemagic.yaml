@@ -7,11 +7,10 @@ workflows:
     environment:
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.harbi.tasbeehapp
-       
+        bundle_identifier: com.harbi.tasbeeh       
     
       vars:
-        BUNDLE_ID: "com.harbi.tasbeehapp"
+        BUNDLE_ID: "com.harbi.tasbeeh"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
         APPLE_DEVELOPER_TEAM_ID: "YTHCWB78HY"
