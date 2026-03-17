@@ -6,7 +6,7 @@ workflows:
 
     environment:
       groups:
-        - appstore  # مناداة مجموعة المتغيرات
+        - appstore  # المجموعة التي أضفت فيها المتغيرات الثلاثة
       vars:
         BUNDLE_ID: "com.harbi.tasbeehapp"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
@@ -33,7 +33,7 @@ workflows:
 
       - name: Set up code signing
         script: |
-          # استخدام المتغيرات يدوياً بدلاً من auth: integration
+          # استخدام المتغيرات الجديدة التي أضفتها أنت يدوياً
           app-store-connect fetch-signing-data "$BUNDLE_ID" \
             --create \
             --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
@@ -52,7 +52,6 @@ workflows:
 
     publishing:
       app_store_connect:
-        # هنا التعديل الذي سيفعل الزر
         api_key: $APP_STORE_CONNECT_PRIVATE_KEY
         key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
         issuer_id: $APP_STORE_CONNECT_ISSUER_ID
