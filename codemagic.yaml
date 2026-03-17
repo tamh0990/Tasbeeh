@@ -5,18 +5,15 @@ workflows:
     instance_type: mac_mini_m2
 
     environment:
-      ios_signing:
-        provisioning_profiles:
-          - tasbeehapp
-
+      groups:
+        - appstore # الخطوة الأهم: هنا نقوم بمناداة المتغيرات الأربعة التي في صورتك
       vars:
         BUNDLE_ID: "com.harbi.tasbeehapp"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
         APPLE_DEVELOPER_TEAM_ID: "YTHCWB78HY"
-
       node: 20
-      xcode: latest
+      xcode: 15.4 # حددنا إصدار مستقر
       cocoapods: default
 
     scripts:
@@ -32,29 +29,24 @@ workflows:
       - name: Install CocoaPods
         script: |
           cd ios/App
-          pod install
+          pod install --repo-update
+
+      - name: Set up code signing settings
+        script: |
+          # هذا السطر السحري هو الذي يحل مشكلة No profiles found
+          app-store-connect fetch-signing-data "$BUNDLE_ID" --create
+          xcode-project use-profiles
 
       - name: Build and archive for App Store
         script: |
-          xcodebuild clean archive \
-            -workspace "$XCODE_WORKSPACE" \
-            -scheme "$XCODE_SCHEME" \
-            -configuration Release \
-            -archivePath "$CM_BUILD_DIR/App.xcarchive" \
-            -destination "generic/platform=iOS" \
-            CODE_SIGN_STYLE=Manual \
-            DEVELOPMENT_TEAM="$APPLE_DEVELOPER_TEAM_ID" \
-            PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
-            PROVISIONING_PROFILE_SPECIFIER="tasbeehapp" \
-            CODE_SIGN_IDENTITY="Apple Distribution"
-
-      - name: Export IPA
-        script: |
-          xcodebuild -exportArchive \
-            -archivePath "$CM_BUILD_DIR/App.xcarchive" \
-            -exportPath "$CM_EXPORT_DIR" \
-            -exportOptionsPlist ios/App/exportOptions.plist
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
 
     artifacts:
-      - $CM_EXPORT_DIR/*.ipa
-      - $CM_BUILD_DIR/*.xcarchive
+      - build/ios/ipa/*.ipa
+
+    publishing:
+      app_store_connect:
+        auth: integration # يستخدم الربط الذي سنفعله في الخطوة القادمة
+        submit_to_testflight: true
