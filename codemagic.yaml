@@ -6,7 +6,7 @@ workflows:
 
     environment:
       groups:
-        - appstore  # الربط بمجموعة المتغيرات في CodeMagic
+        - appstore  # مناداة مجموعة المتغيرات
       vars:
         BUNDLE_ID: "com.harbi.tasbeehapp"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
@@ -33,8 +33,12 @@ workflows:
 
       - name: Set up code signing
         script: |
-          # هذه الأوامر تجعل كودماجيك ينشئ ملفات التوقيع تلقائياً
-          app-store-connect fetch-signing-data "$BUNDLE_ID" --create
+          # استخدام المتغيرات يدوياً بدلاً من auth: integration
+          app-store-connect fetch-signing-data "$BUNDLE_ID" \
+            --create \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY"
           xcode-project use-profiles
 
       - name: Build and archive for App Store
@@ -48,5 +52,8 @@ workflows:
 
     publishing:
       app_store_connect:
-        auth: integration # يستخدم الربط الذي يظهر في صورتك الأخيرة
+        # هنا التعديل الذي سيفعل الزر
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: true
