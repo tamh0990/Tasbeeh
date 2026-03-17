@@ -11,10 +11,8 @@ workflows:
         BUNDLE_ID: "com.harbi.tasbeehapp"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-        APPLE_DEVELOPER_TEAM_ID: "YTHCWB78HY"
       node: 20
       xcode: latest
-      cocoapods: default
 
     scripts:
       - name: Install dependencies
@@ -24,21 +22,27 @@ workflows:
           npx cap sync ios
           cd ios/App && pod install --repo-update
 
-      - name: Set up code signing
+      - name: Set up code signing (Check Points)
         script: |
-          # استخدام الأمر الجديد fetch-signing-files بدلاً من fetch-signing-data
+          # فحص إذا كانت المتغيرات موجودة أصلاً لمنع الفشل الغامض
+          if [ -z "$APP_STORE_CONNECT_PRIVATE_KEY" ]; then echo "خطأ: المفتاح السري غير موجود في الإعدادات"; exit 1; fi
+          
+          # الأمر الصحيح لنسخة كودماجيك الحالية
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
             --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
             --private-key "$APP_STORE_CONNECT_PRIVATE_KEY" \
             --create
+          
           xcode-project use-profiles
 
       - name: Build and archive for App Store
         script: |
+          # بناء التطبيق مع تحديد النوع لضمان تخطي خطأ 65
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME"
+            --scheme "$XCODE_SCHEME" \
+            --code-signing-method app-store
 
     artifacts:
       - build/ios/ipa/*.ipa
