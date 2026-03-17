@@ -5,10 +5,11 @@ workflows:
     instance_type: mac_mini_m2
 
     environment:
-      ios_signing: 
-        provisioning_profiles:
-          - tasbeehapp_store
-          
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.harbi.tasbeehapp
+       
+    
       vars:
         BUNDLE_ID: "com.harbi.tasbeehapp"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
