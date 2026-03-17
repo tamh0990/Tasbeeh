@@ -42,7 +42,7 @@ workflows:
             -configuration Release \
             -archivePath "$CM_BUILD_DIR/App.xcarchive" \
             -destination "generic/platform=iOS" \
-            CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM="$APPLE_DEVELOPER_TEAM_ID" \
             PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID"
 
