@@ -6,14 +6,14 @@ workflows:
 
     environment:
       groups:
-        - appstore # الخطوة الأهم: هنا نقوم بمناداة المتغيرات الأربعة التي في صورتك
+        - appstore  # الربط بمجموعة المتغيرات في CodeMagic
       vars:
         BUNDLE_ID: "com.harbi.tasbeehapp"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
         APPLE_DEVELOPER_TEAM_ID: "YTHCWB78HY"
       node: 20
-      xcode: 15.4 # حددنا إصدار مستقر
+      xcode: latest
       cocoapods: default
 
     scripts:
@@ -31,9 +31,9 @@ workflows:
           cd ios/App
           pod install --repo-update
 
-      - name: Set up code signing settings
+      - name: Set up code signing
         script: |
-          # هذا السطر السحري هو الذي يحل مشكلة No profiles found
+          # هذه الأوامر تجعل كودماجيك ينشئ ملفات التوقيع تلقائياً
           app-store-connect fetch-signing-data "$BUNDLE_ID" --create
           xcode-project use-profiles
 
@@ -48,5 +48,5 @@ workflows:
 
     publishing:
       app_store_connect:
-        auth: integration # يستخدم الربط الذي سنفعله في الخطوة القادمة
+        auth: integration # يستخدم الربط الذي يظهر في صورتك الأخيرة
         submit_to_testflight: true
