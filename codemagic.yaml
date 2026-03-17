@@ -6,7 +6,7 @@ workflows:
 
     environment:
       groups:
-        - appstore  # تأكد أن هذا هو اسم المجموعة في Codemagic
+        - appstore 
       vars:
         BUNDLE_ID: "com.harbi.tasbeehapp"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
@@ -17,38 +17,28 @@ workflows:
       cocoapods: default
 
     scripts:
-      - name: Install npm dependencies
-        script: npm install
-
-      - name: Build web app
-        script: npm run build
-
-      - name: Sync Capacitor
-        script: npx cap sync ios
-
-      - name: Install CocoaPods
+      - name: Install dependencies
         script: |
-          cd ios/App
-          pod install --repo-update
+          npm install
+          npm run build
+          npx cap sync ios
+          cd ios/App && pod install --repo-update
 
       - name: Set up code signing
         script: |
-          # جلب بيانات التوقيع وإنشاء ملف تعريف جديد تلقائياً
-          app-store-connect fetch-signing-data "$BUNDLE_ID" \
-            --create \
+          # استخدام الأمر الجديد fetch-signing-files بدلاً من fetch-signing-data
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
             --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY"
-          xcode-project use-profiles --setup-automatic-signing
+            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY" \
+            --create
+          xcode-project use-profiles
 
       - name: Build and archive for App Store
         script: |
-          # بناء التطبيق مع إجبار Xcode على التوقيع التلقائي لتجنب خطأ 65
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME" \
-            --code-signing-method app-store \
-            --provisioning-profile-type distribution
+            --scheme "$XCODE_SCHEME"
 
     artifacts:
       - build/ios/ipa/*.ipa
