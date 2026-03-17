@@ -6,7 +6,7 @@ workflows:
 
     environment:
       groups:
-        - appstore  # المجموعة التي أضفت فيها المتغيرات الثلاثة
+        - appstore  # تأكد أنك أضفت المتغيرات الثلاثة في هذه المجموعة
       vars:
         BUNDLE_ID: "com.harbi.tasbeehapp"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
@@ -19,13 +19,10 @@ workflows:
     scripts:
       - name: Install npm dependencies
         script: npm install
-
       - name: Build web app
         script: npm run build
-
       - name: Sync Capacitor
         script: npx cap sync ios
-
       - name: Install CocoaPods
         script: |
           cd ios/App
@@ -33,7 +30,7 @@ workflows:
 
       - name: Set up code signing
         script: |
-          # استخدام المتغيرات الجديدة التي أضفتها أنت يدوياً
+          # هذا الأمر سيستخدم المفتاح الجديد لجلب ملفات التوقيع تلقائياً
           app-store-connect fetch-signing-data "$BUNDLE_ID" \
             --create \
             --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
