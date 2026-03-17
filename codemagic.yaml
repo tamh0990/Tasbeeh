@@ -7,7 +7,7 @@ workflows:
     environment:
       ios_signing:
         provisioning_profiles:
-          - tasbeehapp   # ✅ الاسم الصحيح
+          - tasbeehapp
 
       vars:
         BUNDLE_ID: "com.harbi.tasbeehapp"
@@ -42,10 +42,11 @@ workflows:
             -configuration Release \
             -archivePath "$CM_BUILD_DIR/App.xcarchive" \
             -destination "generic/platform=iOS" \
-            CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM="$APPLE_DEVELOPER_TEAM_ID" \
             PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
-            -allowProvisioningUpdates
+            PROVISIONING_PROFILE_SPECIFIER="tasbeehapp" \
+            CODE_SIGN_IDENTITY="Apple Distribution"
 
       - name: Export IPA
         script: |
@@ -57,11 +58,3 @@ workflows:
     artifacts:
       - $CM_EXPORT_DIR/*.ipa
       - $CM_BUILD_DIR/*.xcarchive
-
-    publishing:
-      app_store_connect:
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-        submit_to_testflight: true
-        submit_to_app_store: false
