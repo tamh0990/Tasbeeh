@@ -6,42 +6,118 @@ workflows:
 
     environment:
       groups:
-        - appstore 
+        - appstore
       vars:
         BUNDLE_ID: "com.harbi.tasbeehapp"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
         APPLE_DEVELOPER_TEAM_ID: "YTHCWB78HY"
+        # مسار exportOptions (تأكد من وجوده)
+        EXPORT_OPTIONS_PATH: "ios/App/exportOptions.plist"
       node: 20
       xcode: latest
       cocoapods: default
 
     scripts:
-      - name: Install dependencies
-        script: |
-          npm install
-          npm run build
-          npx cap sync ios
-          cd ios/App && pod install --repo-update
+      - name: Install npm dependencies
+        script: npm install
 
-      - name: Set up code signing
+      - name: Build web app
+        script: npm run build
+
+      - name: Sync Capacitor
+        script: npx cap sync ios
+
+      - name: Install CocoaPods
         script: |
-          # استخدام الأمر الجديد fetch-signing-files بدلاً من fetch-signing-data
+          cd ios/App
+          pod install --repo-update
+
+      - name: 🔍 التحقق من المتغيرات والمفاتيح
+        script: |
+          echo "التحقق من وجود متغيرات API..."
+          if [ -z "$APP_STORE_CONNECT_ISSUER_ID" ]; then
+            echo "❌ متغير APP_STORE_CONNECT_ISSUER_ID غير موجود"
+            exit 1
+          fi
+          if [ -z "$APP_STORE_CONNECT_KEY_IDENTIFIER" ]; then
+            echo "❌ متغير APP_STORE_CONNECT_KEY_IDENTIFIER غير موجود"
+            exit 1
+          fi
+          if [ -z "$APP_STORE_CONNECT_PRIVATE_KEY" ]; then
+            echo "❌ متغير APP_STORE_CONNECT_PRIVATE_KEY غير موجود"
+            exit 1
+          fi
+          echo "✅ جميع المتغيرات موجودة"
+
+          echo "التحقق من وجود ملف exportOptions.plist..."
+          if [ ! -f "$EXPORT_OPTIONS_PATH" ]; then
+            echo "⚠️ ملف exportOptions.plist غير موجود، سيتم إنشاؤه..."
+            mkdir -p ios/App
+            cat > "$EXPORT_OPTIONS_PATH" << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>app-store</string>
+    <key>uploadBitcode</key>
+    <false/>
+    <key>uploadSymbols</key>
+    <true/>
+    <key>compileBitcode</key>
+    <false/>
+    <key>signingStyle</key>
+    <string>automatic</string>
+    <key>stripSwiftSymbols</key>
+    <true/>
+    <key>thinning</key>
+    <string>&lt;none&gt;</string>
+</dict>
+</plist>
+EOF
+            echo "✅ تم إنشاء exportOptions.plist"
+          else
+            echo "✅ ملف exportOptions.plist موجود"
+          fi
+
+      - name: 🔐 إعداد التوقيع التلقائي
+        script: |
+          echo "جلب ملفات التوقيع من Apple..."
+          # استخدام الأمر الصحيح (fetch-signing-files)
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
             --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
             --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
             --private-key "$APP_STORE_CONNECT_PRIVATE_KEY" \
             --create
+
+          echo "تطبيق ملفات التوقيع على المشروع..."
           xcode-project use-profiles
 
-      - name: Build and archive for App Store
+      - name: 🏗️ بناء الأرشفة
         script: |
+          echo "بناء الأرشفة باستخدام xcode-project build-ipa..."
+          # بناء IPA مباشرة باستخدام الأداة الرسمية
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME"
+            --scheme "$XCODE_SCHEME" \
+            --archive-flags "-destination generic/platform=iOS" \
+            --export-options-plist "$EXPORT_OPTIONS_PATH"
+
+      - name: 📦 التحقق من وجود IPA
+        script: |
+          IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -n 1)
+          if [ -z "$IPA_PATH" ]; then
+            echo "❌ لم يتم العثور على ملف IPA!"
+            exit 1
+          fi
+          echo "✅ تم إنشاء IPA: $IPA_PATH"
+          ls -lh "$IPA_PATH"
 
     artifacts:
       - build/ios/ipa/*.ipa
+      - $HOME/Library/Developer/Xcode/DerivedData/**/*.xcarchive
 
     publishing:
       app_store_connect:
