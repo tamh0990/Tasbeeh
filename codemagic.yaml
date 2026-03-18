@@ -1,52 +1,40 @@
 workflows:
   ios-app-store:
     name: iOS App Store Build
-
+    instance_type: mac_mini_m2
+    max_build_duration: 60
     environment:
       groups:
-        - appstore
+        - appstore # تأكد أن هذا هو اسم المجموعة التي أضفت فيها القيم
       vars:
         BUNDLE_ID: "com.harbi.tasbeehapp"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-
     scripts:
-      - name: Install dependencies
-        script: npm install
-
-      - name: Build web
-        script: npm run build
-
-      - name: Sync Capacitor
-        script: npx cap sync ios
-
-      - name: Install pods
+      - name: Install Dependencies
         script: |
-          cd ios/App
-          pod install
-
-      - name: Setup signing
+          npm install
+          npm run build
+          npx cap sync ios
+          cd ios/App && pod install --repo-update
+      - name: Set up code signing
         script: |
-          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > key.p8
-
+          # هذه الخطوة ستحول الأحمر إلى أخضر لأنها ستستخدم مفاتيحك الجديدة
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
             --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
             --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            --private-key @key.p8 \
+            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY" \
             --create
-
           xcode-project use-profiles
-
       - name: Build IPA
         script: |
+          # إجبار التوقيع التلقائي هنا هو الحل لخطأ 65
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME"
-
+            --scheme "$XCODE_SCHEME" \
+            --code-signing-method app-store
     artifacts:
       - build/ios/ipa/*.ipa
-
     publishing:
       app_store_connect:
         api_key: $APP_STORE_CONNECT_PRIVATE_KEY
