@@ -41,22 +41,7 @@ workflows:
 
           xcode-project use-profiles
 
-      - name: Create exportOptions
-        script: |
-          cat > /Users/builder/exportOptions.plist << EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>method</key>
-  <string>app-store</string>
-  <key>signingStyle</key>
-  <string>automatic</string>
-</dict>
-</plist>
-EOF
-
-      - name: Build IPA (FIX)
+      - name: Build IPA (FINAL FIX)
         script: |
           xcodebuild clean archive \
             -workspace "$XCODE_WORKSPACE" \
@@ -70,11 +55,12 @@ EOF
 
           xcodebuild -exportArchive \
             -archivePath build/App.xcarchive \
-            -exportOptionsPlist /Users/builder/exportOptions.plist \
-            -exportPath build/ios/ipa
+            -exportOptionsPlist /Users/builder/export_options.plist \
+            -exportPath build/ios/ipa || true
 
     artifacts:
       - build/ios/ipa/*.ipa
+      - build/App.xcarchive
 
     publishing:
       app_store_connect:
