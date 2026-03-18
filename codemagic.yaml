@@ -3,6 +3,7 @@ workflows:
     name: iOS App Store Build
     max_build_duration: 120
     instance_type: mac_mini_m2
+
     environment:
       groups:
         - appstore
@@ -10,40 +11,47 @@ workflows:
         BUNDLE_ID: "com.harbi.tasbeehapp"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
+
     scripts:
       - name: Install dependencies
         script: npm install
+
       - name: Build web
         script: npm run build
+
       - name: Sync Capacitor
         script: npx cap sync ios
+
       - name: Install pods
         script: |
           cd ios/App
           pod install
+
       - name: Setup signing
         script: |
-          # تحويل المفتاح السري لملف مؤقت
           echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/key.p8
-          
-          # جلب ملفات التوقيع
+
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
             --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
             --private-key @/tmp/key.p8 \
             --create
-            
+
           xcode-project use-profiles
+
       - name: Build IPA
         script: |
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME" \
-            --mode release
+            --scheme "$XCODE_SCHEME"
+
     artifacts:
       - build/ios/ipa/*.ipa
+
     publishing:
       app_store_connect:
-        auth: integration
-        api_key_name: tesbeen-new
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true
