@@ -5,7 +5,7 @@ workflows:
     instance_type: mac_mini_m2
     environment:
       groups:
-        - appstore # تأكد أن هذا هو اسم المجموعة في Environment variables
+        - appstore
       vars:
         BUNDLE_ID: "com.harbi.tasbeehapp"
         XCODE_PROJECT: "ios/App/App.xcodeproj"
@@ -15,7 +15,6 @@ workflows:
       - name: Set up code signing
         script: |
           keychain initialize
-          # هذا السطر سيقوم بجلب الشهادات وإنشاء الـ Profile آلياً باستخدام مفتاحك الجديد
           app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
           keychain add-certificates
           xcode-project use-profiles
@@ -33,5 +32,4 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
-        # تأكد أن اسم المفتاح هنا مطابق تماماً للاسم في صفحة Integrations
         api_key_name: tesbeen-new
