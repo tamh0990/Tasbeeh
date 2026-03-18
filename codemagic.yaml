@@ -32,4 +32,6 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
-        api_key_name: tesbeen-new
+        api_key_name:
+        tesbeen-new
+        
