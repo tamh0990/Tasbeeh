@@ -30,6 +30,7 @@ workflows:
 
       - name: Setup signing
         script: |
+          keychain initialize
           echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/key.p8
 
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
@@ -39,28 +40,18 @@ workflows:
             --private-key @/tmp/key.p8 \
             --create
 
+          keychain add-certificates
           xcode-project use-profiles
 
-      - name: Build IPA (FINAL FIX)
+      - name: Build IPA (FINAL)
         script: |
-          xcodebuild clean archive \
-            -workspace "$XCODE_WORKSPACE" \
-            -scheme "$XCODE_SCHEME" \
-            -configuration Release \
-            -archivePath build/App.xcarchive \
-            -destination "generic/platform=iOS" \
-            CODE_SIGN_STYLE=Automatic \
-            DEVELOPMENT_TEAM="$APPLE_DEVELOPER_TEAM_ID" \
-            -allowProvisioningUpdates
-
-          xcodebuild -exportArchive \
-            -archivePath build/App.xcarchive \
-            -exportOptionsPlist /Users/builder/export_options.plist \
-            -exportPath build/ios/ipa || true
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME" \
+            --mode release
 
     artifacts:
       - build/ios/ipa/*.ipa
-      - build/App.xcarchive
 
     publishing:
       app_store_connect:
