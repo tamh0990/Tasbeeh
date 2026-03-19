@@ -43,12 +43,11 @@ workflows:
           keychain add-certificates
           xcode-project use-profiles
 
-      - name: Build IPA (FINAL)
+      - name: Build IPA (FIXED)
         script: |
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME" \
-            --mode release
+            --scheme "$XCODE_SCHEME"
 
     artifacts:
       - build/ios/ipa/*.ipa
