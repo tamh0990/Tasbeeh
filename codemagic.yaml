@@ -5,15 +5,13 @@ workflows:
     instance_type: mac_mini_m2
 
     environment:
+      groups:
+        - appstore
       vars:
         BUNDLE_ID: "com.harbi.tasbeehapp"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
         APPLE_DEVELOPER_TEAM_ID: "YTHCWB78HY"
-        # لا نستخدم مفاتيح API هنا، نعتمد على الملف المرفوع
-      ios_signing:
-        provisioning_profiles:
-          - tasbeehapp_profile   # استخدم الاسم الذي أعطيته عند الرفع
 
     scripts:
       - name: Install dependencies
@@ -25,38 +23,41 @@ workflows:
       - name: Sync Capacitor
         script: npx cap sync ios
 
-      - name: Install CocoaPods
+      - name: Install pods
         script: |
           cd ios/App
-          pod install --repo-update
+          pod install
 
-      - name: Build and export IPA
+      - name: Setup signing
         script: |
-          # بناء الأرشيف
+          keychain initialize
+          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/key.p8
+
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            --private-key @/tmp/key.p8 \
+            --create
+
+          keychain add-certificates
+          xcode-project use-profiles
+
+      - name: Build IPA (FINAL FIX)
+        script: |
           xcodebuild clean archive \
             -workspace "$XCODE_WORKSPACE" \
             -scheme "$XCODE_SCHEME" \
             -configuration Release \
             -archivePath build/App.xcarchive \
             -destination "generic/platform=iOS" \
-            CODE_SIGN_STYLE=Manual \
-            PROVISIONING_PROFILE_SPECIFIER="tasbeehapp_profile" \
             DEVELOPMENT_TEAM="$APPLE_DEVELOPER_TEAM_ID" \
-            PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID"
+            -allowProvisioningUpdates
 
-          # تصدير IPA
           xcodebuild -exportArchive \
             -archivePath build/App.xcarchive \
             -exportOptionsPlist ios/App/exportOptions.plist \
             -exportPath build/ios/ipa
-
-          # التحقق
-          if [ -f build/ios/ipa/*.ipa ]; then
-            echo "✅ IPA created successfully"
-          else
-            echo "❌ IPA not found"
-            exit 1
-          fi
 
     artifacts:
       - build/ios/ipa/*.ipa
