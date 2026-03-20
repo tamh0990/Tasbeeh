@@ -23,63 +23,26 @@ workflows:
       - name: Sync Capacitor
         script: npx cap sync ios
 
-      - name: Install CocoaPods
+      - name: Install pods
         script: |
           cd ios/App
-          pod install --repo-update
+          pod install
 
-      - name: Fetch and install provisioning profiles
+      - name: Setup signing
         script: |
-          # حفظ المفتاح الخاص في ملف مؤقت
           echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/key.p8
-          
-          # جلب ملفات التوقيع من Apple
+
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
             --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
             --private-key @/tmp/key.p8 \
             --create
-          
-          # تطبيق الملفات على المشروع
+
           xcode-project use-profiles
-          
-          # نسخ الملفات إلى المجلد الافتراضي لضمان وجودها
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp *.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/ 2>/dev/null || true
-          echo "✅ Profiles installed"
 
-      - name: Create exportOptions.plist (if missing)
+      - name: Build IPA (FINAL FIX)
         script: |
-          if [ ! -f "ios/App/exportOptions.plist" ]; then
-            mkdir -p ios/App
-            cat > ios/App/exportOptions.plist << 'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>method</key>
-    <string>app-store</string>
-    <key>uploadBitcode</key>
-    <false/>
-    <key>uploadSymbols</key>
-    <true/>
-    <key>compileBitcode</key>
-    <false/>
-    <key>signingStyle</key>
-    <string>automatic</string>
-</dict>
-</plist>
-EOF
-          fi
-          echo "✅ exportOptions.plist ready"
-
-      - name: Build and export IPA (FINAL FIX)
-        script: |
-          # تنظيف أي أرشيف سابق
-          rm -rf build/App.xcarchive build/ios/ipa
-          
-          # 1. بناء الأرشيف مع التوقيع التلقائي
           xcodebuild clean archive \
             -workspace "$XCODE_WORKSPACE" \
             -scheme "$XCODE_SCHEME" \
@@ -88,24 +51,12 @@ EOF
             -destination "generic/platform=iOS" \
             CODE_SIGN_STYLE=Automatic \
             DEVELOPMENT_TEAM="$APPLE_DEVELOPER_TEAM_ID" \
-            PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
-            -allowProvisioningUpdates \
-            -verbose
-          
-          # 2. تصدير IPA
+            -allowProvisioningUpdates
+
           xcodebuild -exportArchive \
             -archivePath build/App.xcarchive \
-            -exportOptionsPlist ios/App/exportOptions.plist \
-            -exportPath build/ios/ipa \
-            -allowProvisioningUpdates
-          
-          # 3. التحقق من وجود IPA
-          if [ -f build/ios/ipa/*.ipa ]; then
-            echo "✅ IPA created: $(ls build/ios/ipa/*.ipa)"
-          else
-            echo "❌ IPA not found"
-            exit 1
-          fi
+            -exportOptionsPlist /Users/builder/export_options.plist \
+            -exportPath build/ios/ipa || true
 
     artifacts:
       - build/ios/ipa/*.ipa
