@@ -28,26 +28,72 @@ workflows:
           cd ios/App
           pod install --repo-update
 
-      - name: Setup signing & build IPA
+      - name: Fetch provisioning profiles
         script: |
-          # حفظ المفتاح الخاص في ملف مؤقت
           echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/key.p8
-
-          # استخدام أداة CodeMagic الرسمية لبناء IPA (تتعامل مع كل شيء)
-          xcode-project build-ipa \
-            --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME" \
-            --configuration Release \
-            --archive-flags "-destination generic/platform=iOS" \
-            --sign \
-            --signing-data "$BUNDLE_ID" \
-            --signing-type IOS_APP_STORE \
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
             --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
             --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            --private-key @/tmp/key.p8
+            --private-key @/tmp/key.p8 \
+            --create
+          xcode-project use-profiles
+
+      - name: Create exportOptions.plist if missing
+        script: |
+          EXPORT_PATH="ios/App/exportOptions.plist"
+          if [ ! -f "$EXPORT_PATH" ]; then
+            mkdir -p ios/App
+            cat > "$EXPORT_PATH" << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>app-store</string>
+    <key>uploadBitcode</key>
+    <false/>
+    <key>uploadSymbols</key>
+    <true/>
+    <key>compileBitcode</key>
+    <false/>
+    <key>signingStyle</key>
+    <string>automatic</string>
+</dict>
+</plist>
+EOF
+          fi
+
+      - name: Build and export IPA
+        script: |
+          # 1. Archive
+          xcodebuild clean archive \
+            -workspace "$XCODE_WORKSPACE" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Release \
+            -archivePath build/App.xcarchive \
+            -destination "generic/platform=iOS" \
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM="$APPLE_DEVELOPER_TEAM_ID" \
+            PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
+            -allowProvisioningUpdates
+
+          # 2. Export IPA
+          xcodebuild -exportArchive \
+            -archivePath build/App.xcarchive \
+            -exportOptionsPlist ios/App/exportOptions.plist \
+            -exportPath build/ios/ipa
+
+          # 3. Verify
+          if [ ! -f build/ios/ipa/*.ipa ]; then
+            echo "❌ IPA not found"
+            exit 1
+          fi
+          echo "✅ IPA created successfully"
 
     artifacts:
       - build/ios/ipa/*.ipa
+      - build/App.xcarchive
 
     publishing:
       app_store_connect:
