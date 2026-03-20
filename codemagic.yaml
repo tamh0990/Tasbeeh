@@ -15,21 +15,21 @@ workflows:
         EXPORT_OPTIONS_PATH: "ios/App/exportOptions.plist"
 
     scripts:
-      - name: تثبيت الاعتماديات
+      - name: Install npm dependencies
         script: npm install
 
-      - name: بناء الويب
+      - name: Build web app
         script: npm run build
 
-      - name: مزامنة Capacitor
+      - name: Sync Capacitor
         script: npx cap sync ios
 
-      - name: تثبيت CocoaPods
+      - name: Install CocoaPods
         script: |
           cd ios/App
           pod install --repo-update
 
-      - name: إعداد التوقيع (جلب ملفات Apple)
+      - name: Set up code signing
         script: |
           echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/key.p8
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
@@ -40,37 +40,9 @@ workflows:
             --create
           xcode-project use-profiles
 
-      - name: إنشاء exportOptions إذا لم يكن موجوداً
+      - name: Build and export IPA
         script: |
-          if [ ! -f "$EXPORT_OPTIONS_PATH" ]; then
-            echo "⚠️ ملف exportOptions غير موجود، جارٍ إنشاؤه..."
-            mkdir -p ios/App
-            cat > "$EXPORT_OPTIONS_PATH" << 'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>method</key>
-    <string>app-store</string>
-    <key>uploadBitcode</key>
-    <false/>
-    <key>uploadSymbols</key>
-    <true/>
-    <key>compileBitcode</key>
-    <false/>
-    <key>signingStyle</key>
-    <string>automatic</string>
-</dict>
-</plist>
-EOF
-            echo "✅ تم الإنشاء"
-          else
-            echo "✅ الملف موجود"
-          fi
-
-      - name: بناء وتصدير IPA
-        script: |
-          # 1. بناء الأرشيف
+          # بناء الأرشفة
           xcodebuild clean archive \
             -workspace "$XCODE_WORKSPACE" \
             -scheme "$XCODE_SCHEME" \
@@ -81,21 +53,18 @@ EOF
             DEVELOPMENT_TEAM="$APPLE_DEVELOPER_TEAM_ID" \
             -allowProvisioningUpdates
 
-          # 2. تصدير IPA
+          # تصدير IPA باستخدام ملف exportOptions الموجود في المستودع
           xcodebuild -exportArchive \
             -archivePath build/App.xcarchive \
             -exportOptionsPlist "$EXPORT_OPTIONS_PATH" \
             -exportPath build/ios/ipa
 
-          # 3. التحقق من وجود IPA
+          # التأكد من وجود ملف IPA
           if [ ! -f build/ios/ipa/*.ipa ]; then
-            echo "❌ فشل إنشاء IPA"
+            echo "❌ لم يتم إنشاء IPA"
             exit 1
           fi
-          echo "✅ تم إنشاء IPA"
-
-      - name: عرض ملفات IPA
-        script: ls -la build/ios/ipa/
+          echo "✅ IPA created successfully"
 
     artifacts:
       - build/ios/ipa/*.ipa
