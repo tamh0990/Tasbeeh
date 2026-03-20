@@ -12,45 +12,79 @@ workflows:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
         APPLE_DEVELOPER_TEAM_ID: "YTHCWB78HY"
+        EXPORT_OPTIONS_PATH: "ios/App/exportOptions.plist"
 
     scripts:
-      - name: Install dependencies
+      - name: تثبيت الاعتماديات
         script: npm install
 
-      - name: Build web
+      - name: بناء الويب
         script: npm run build
 
-      - name: Sync Capacitor
+      - name: مزامنة Capacitor
         script: npx cap sync ios
 
-      - name: Install pods
+      - name: تثبيت CocoaPods
         script: |
           cd ios/App
-          pod install
+          pod install --repo-update
 
-      - name: Setup signing
+      - name: إعداد التوقيع (جلب ملفات Apple)
         script: |
-          keychain initialize
+          # حفظ المفتاح الخاص في ملف مؤقت
           echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/key.p8
-
+          # جلب ملفات التوقيع
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
             --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
             --private-key @/tmp/key.p8 \
             --create
-
-          keychain add-certificates
+          # تطبيقها على المشروع
           xcode-project use-profiles
 
-      - name: Build IPA (FIXED)
+      - name: إنشاء exportOptions إذا لم يكن موجوداً
         script: |
+          if [ ! -f "$EXPORT_OPTIONS_PATH" ]; then
+            echo "⚠️ ملف exportOptions غير موجود، جارٍ إنشاؤه..."
+            mkdir -p ios/App
+            cat > "$EXPORT_OPTIONS_PATH" << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>app-store</string>
+    <key>uploadBitcode</key>
+    <false/>
+    <key>uploadSymbols</key>
+    <true/>
+    <key>compileBitcode</key>
+    <false/>
+    <key>signingStyle</key>
+    <string>automatic</string>
+</dict>
+</plist>
+EOF
+            echo "✅ تم الإنشاء"
+          else
+            echo "✅ الملف موجود"
+          fi
+
+      - name: بناء وتصدير IPA (باستخدام xcode-project)
+        script: |
+          # بناء IPA مباشرة
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME"
+            --scheme "$XCODE_SCHEME" \
+            --export-options-plist "$EXPORT_OPTIONS_PATH"
+
+      - name: عرض ملفات IPA
+        script: ls -la build/ios/ipa/
 
     artifacts:
       - build/ios/ipa/*.ipa
+      - build/ios/xcarchive/*.xcarchive
 
     publishing:
       app_store_connect:
