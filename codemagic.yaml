@@ -12,7 +12,6 @@ workflows:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
         APPLE_DEVELOPER_TEAM_ID: "YTHCWB78HY"
-        EXPORT_OPTIONS_PATH: "ios/App/exportOptions.plist"
 
     scripts:
       - name: Install dependencies
@@ -29,37 +28,26 @@ workflows:
           cd ios/App
           pod install --repo-update
 
-      - name: Set up code signing (fetch profiles)
+      - name: Setup signing & build IPA
         script: |
+          # حفظ المفتاح الخاص في ملف مؤقت
           echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/key.p8
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
-            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            --private-key @/tmp/key.p8 \
-            --create
-          xcode-project use-profiles
 
-      - name: Build IPA (using official tool)
-        script: |
+          # استخدام أداة CodeMagic الرسمية لبناء IPA (تتعامل مع كل شيء)
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
             --scheme "$XCODE_SCHEME" \
-            --export-options-plist "$EXPORT_OPTIONS_PATH"
-
-      - name: Verify IPA
-        script: |
-          IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -n 1)
-          if [ -z "$IPA_PATH" ]; then
-            echo "❌ No IPA found"
-            exit 1
-          fi
-          echo "✅ IPA created: $IPA_PATH"
-          ls -lh "$IPA_PATH"
+            --configuration Release \
+            --archive-flags "-destination generic/platform=iOS" \
+            --sign \
+            --signing-data "$BUNDLE_ID" \
+            --signing-type IOS_APP_STORE \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            --private-key @/tmp/key.p8
 
     artifacts:
       - build/ios/ipa/*.ipa
-      - build/ios/xcarchive/*.xcarchive
 
     publishing:
       app_store_connect:
