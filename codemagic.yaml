@@ -26,11 +26,10 @@ workflows:
       - name: Install pods
         script: |
           cd ios/App
-          pod install
+          pod install --repo-update
 
       - name: Setup signing
         script: |
-          keychain initialize
           echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/key.p8
 
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
@@ -40,13 +39,10 @@ workflows:
             --private-key @/tmp/key.p8 \
             --create
 
-          keychain add-certificates
           xcode-project use-profiles
 
       - name: Build IPA (FINAL WORKING)
         script: |
-          xcode-project use-profiles
-
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
             --scheme "$XCODE_SCHEME"
