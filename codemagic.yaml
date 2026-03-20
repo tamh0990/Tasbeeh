@@ -31,16 +31,13 @@ workflows:
 
       - name: إعداد التوقيع (جلب ملفات Apple)
         script: |
-          # حفظ المفتاح الخاص في ملف مؤقت
           echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/key.p8
-          # جلب ملفات التوقيع
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
             --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
             --private-key @/tmp/key.p8 \
             --create
-          # تطبيقها على المشروع
           xcode-project use-profiles
 
       - name: إنشاء exportOptions إذا لم يكن موجوداً
@@ -71,20 +68,38 @@ EOF
             echo "✅ الملف موجود"
           fi
 
-      - name: بناء وتصدير IPA (باستخدام xcode-project)
+      - name: بناء وتصدير IPA
         script: |
-          # بناء IPA مباشرة
-          xcode-project build-ipa \
-            --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME" \
-            --export-options-plist "$EXPORT_OPTIONS_PATH"
+          # 1. بناء الأرشيف
+          xcodebuild clean archive \
+            -workspace "$XCODE_WORKSPACE" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Release \
+            -archivePath build/App.xcarchive \
+            -destination "generic/platform=iOS" \
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM="$APPLE_DEVELOPER_TEAM_ID" \
+            -allowProvisioningUpdates
+
+          # 2. تصدير IPA
+          xcodebuild -exportArchive \
+            -archivePath build/App.xcarchive \
+            -exportOptionsPlist "$EXPORT_OPTIONS_PATH" \
+            -exportPath build/ios/ipa
+
+          # 3. التحقق من وجود IPA
+          if [ ! -f build/ios/ipa/*.ipa ]; then
+            echo "❌ فشل إنشاء IPA"
+            exit 1
+          fi
+          echo "✅ تم إنشاء IPA"
 
       - name: عرض ملفات IPA
         script: ls -la build/ios/ipa/
 
     artifacts:
       - build/ios/ipa/*.ipa
-      - build/ios/xcarchive/*.xcarchive
+      - build/App.xcarchive
 
     publishing:
       app_store_connect:
