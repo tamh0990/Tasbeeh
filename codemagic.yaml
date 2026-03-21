@@ -3,6 +3,9 @@ workflows:
     name: iOS App Store Build
     instance_type: mac_mini_m2
 
+    integrations:
+      app_store_connect: true
+
     environment:
       vars:
         BUNDLE_ID: "com.harbi.tasbeehapp"
@@ -45,5 +48,5 @@ workflows:
 
     publishing:
       app_store_connect:
-        auth: automatic
+        auth: integration
         submit_to_testflight: true
