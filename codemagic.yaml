@@ -1,6 +1,6 @@
 workflows:
-  ios-app-store:
-    name: iOS App Store Build
+  ios-auto-build:
+    name: FULL AUTO IOS BUILD
 
     integrations:
       app_store_connect: tesbeen-new
@@ -14,26 +14,37 @@ workflows:
         bundle_identifier: com.harbi.tasbeehapp
 
     scripts:
+
+      # 1️⃣ تثبيت المكتبات
       - name: Install Node modules
         script: |
           npm install
 
+      # 2️⃣ بناء الموقع (يحُل مشكلة index.html)
+      - name: Build web app
+        script: |
+          npm run build || echo "No build script, skipping..."
+
+      # 3️⃣ مزامنة Capacitor
       - name: Sync Capacitor
         script: |
           npx cap sync ios
 
+      # 4️⃣ تثبيت Pods
       - name: Install pods
         script: |
           cd ios/App
           pod install
 
-      - name: Set up code signing
+      # 5️⃣ التوقيع (أهم خطوة)
+      - name: Setup signing
         script: |
           keychain initialize
           app-store-connect fetch-signing-files "$BUNDLE_ID"
           keychain add-certificates
           xcode-project use-profiles
 
+      # 6️⃣ بناء التطبيق
       - name: Build IPA
         script: |
           xcode-project build-ipa \
