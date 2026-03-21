@@ -1,6 +1,7 @@
+
 workflows:
   ios-app-store:
-    name: AUTO FULL BUILD (NO ERRORS)
+    name: FINAL FAILSAFE BUILD
     instance_type: mac_mini_m2
 
     integrations:
@@ -14,44 +15,53 @@ workflows:
         DEVELOPMENT_TEAM: "YTHCWB78HY"
 
     scripts:
-      - name: Clean everything
+      - name: FULL CLEAN
         script: |
-          rm -rf ios/App/build
-          rm -rf ~/Library/Developer/Xcode/DerivedData
+          echo "Cleaning..."
+          rm -rf ios/App/build || true
+          rm -rf ~/Library/Developer/Xcode/DerivedData || true
 
-      - name: Install dependencies
+      - name: INSTALL
         script: npm install
 
-      - name: Build web
+      - name: BUILD WEB
         script: npm run build
 
-      - name: Sync Capacitor
+      - name: SYNC IOS
         script: npx cap sync ios
 
-      - name: Install CocoaPods
+      - name: POD INSTALL
         script: |
           cd ios/App
           pod install --repo-update
           cd ../..
 
-      - name: Setup automatic signing (FULL AUTO)
+      - name: FIX SIGNING (AUTO)
         script: |
+          echo "Fix signing..."
           keychain initialize
 
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --create
+            --create || true
 
-          keychain add-certificates
+          keychain add-certificates || true
+          xcode-project use-profiles || true
 
-          xcode-project use-profiles
-
-      - name: Force fix project signing
-        script: |
+          # force automatic
           sed -i '' 's/CODE_SIGN_STYLE = Manual/CODE_SIGN_STYLE = Automatic/g' ios/App/App.xcodeproj/project.pbxproj || true
 
-      - name: Build archive (HARD FORCE)
+      - name: BUILD TRY 1 (xcode-project)
         script: |
+          echo "Try build method 1..."
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME" || echo "FAILED_1"
+
+      - name: BUILD TRY 2 (xcodebuild fallback)
+        script: |
+          echo "Try build method 2..."
+
           xcodebuild \
             -workspace "$XCODE_WORKSPACE" \
             -scheme "$XCODE_SCHEME" \
@@ -64,14 +74,14 @@ workflows:
             CODE_SIGN_STYLE=Automatic \
             -allowProvisioningUpdates
 
-      - name: Export IPA
-        script: |
-          xcodebuild -exportArchive \
+          xcodebuild \
+            -exportArchive \
             -archivePath build/App.xcarchive \
             -exportOptionsPlist ios/App/exportOptions.plist \
             -exportPath build/ipa
 
     artifacts:
+      - build/ios/ipa/*.ipa
       - build/ipa/*.ipa
 
     publishing:
