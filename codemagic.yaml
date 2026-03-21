@@ -1,16 +1,14 @@
 workflows:
   ios-app-store:
     name: iOS App Store Build
-    max_build_duration: 120
     instance_type: mac_mini_m2
 
     environment:
-      groups:
-        - appstore
       vars:
         BUNDLE_ID: "com.harbi.tasbeehapp"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
+        APPLE_DEVELOPER_TEAM_ID: "YTHCWB78HY"
 
     scripts:
       - name: Install dependencies
@@ -30,26 +28,13 @@ workflows:
       - name: Setup signing
         script: |
           keychain initialize
-          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/key.p8
-
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
-            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            --private-key @/tmp/key.p8 \
             --create
-
           keychain add-certificates
           xcode-project use-profiles
 
-      - name: 🔥 FORCE FIX SIGNING (IMPORTANT)
-        script: |
-          /usr/bin/perl -pi -e 's/CODE_SIGN_STYLE = Manual;/CODE_SIGN_STYLE = Automatic;/g' ios/App/App.xcodeproj/project.pbxproj
-
-          echo "VERIFY:"
-          grep CODE_SIGN_STYLE ios/App/App.xcodeproj/project.pbxproj || true
-
-      - name: Build IPA (FINAL REAL FIX)
+      - name: Build IPA
         script: |
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
@@ -60,7 +45,5 @@ workflows:
 
     publishing:
       app_store_connect:
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        auth: integration
         submit_to_testflight: true
