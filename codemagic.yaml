@@ -1,55 +1,49 @@
 workflows:
-  ios-auto-build:
-    name: FULL AUTO IOS BUILD
-
-    integrations:
-      app_store_connect: tesbeen-new
-
+  ios-app-store:
+    name: iOS App Store Build
+    max_build_duration: 120
+    instance_type: mac_mini_m2
     environment:
+      groups:
+        - appstore
       vars:
-        BUNDLE_ID: com.harbi.tasbeehapp
-
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.harbi.tasbeehapp
-
+        BUNDLE_ID: "com.harbi.tasbeehapp"
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+        APPLE_DEVELOPER_TEAM_ID: "YTHCWB78HY"
     scripts:
-
-      # 1️⃣ تثبيت المكتبات
-      - name: Install Node modules
-        script: |
-          npm install
-
-      # 2️⃣ بناء الموقع (يحُل مشكلة index.html)
-      - name: Build web app
-        script: |
-          npm run build || echo "No build script, skipping..."
-
-      # 3️⃣ مزامنة Capacitor
+      - name: Install dependencies
+        script: npm install
+      - name: Build web
+        script: npm run build
       - name: Sync Capacitor
-        script: |
-          npx cap sync ios
-
-      # 4️⃣ تثبيت Pods
+        script: npx cap sync ios
       - name: Install pods
         script: |
           cd ios/App
           pod install
-
-      # 5️⃣ التوقيع (أهم خطوة)
       - name: Setup signing
         script: |
           keychain initialize
-          app-store-connect fetch-signing-files "$BUNDLE_ID"
+          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/key.p8
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            --private-key @/tmp/key.p8 \
+            --create
           keychain add-certificates
           xcode-project use-profiles
-
-      # 6️⃣ بناء التطبيق
       - name: Build IPA
         script: |
           xcode-project build-ipa \
-            --workspace "ios/App/App.xcworkspace" \
-            --scheme "App"
-
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME" \
+            --mode release
     artifacts:
       - build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        api_key_name: tesbeen-new
+        submit_to_testflight: true
