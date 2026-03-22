@@ -2,43 +2,47 @@ workflows:
   ios-app-store:
     name: iOS App Store Build
     max_build_duration: 120
-
-    integrations:
-      app_store_connect: tesbeen-new
+    instance_type: mac_mini_m2
 
     environment:
+      groups:
+        - appstore
       vars:
         BUNDLE_ID: "com.harbi.tasbeehapp"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.harbi.tasbeehapp
+        APPLE_DEVELOPER_TEAM_ID: "YTHCWB78HY"
 
     scripts:
-
       - name: Install dependencies
-        script: |
-          npm install
+        script: npm install
 
       - name: Build web
-        script: |
-          npm run build || echo "skip build"
+        script: npm run build
 
       - name: Sync Capacitor
+        script: npx cap sync ios
+
+      # 🔥 هذا أهم تعديل (إجباري)
+      - name: Force iOS 15
         script: |
-          npx cap sync ios
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 14.0/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' ios/App/App.xcodeproj/project.pbxproj || true
 
       - name: Install pods
         script: |
           cd ios/App
           pod install
 
-      - name: Setup signing (AUTO)
+      - name: Setup signing
         script: |
           keychain initialize
-          app-store-connect fetch-signing-files "$BUNDLE_ID"
+          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/key.p8
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            --private-key @/tmp/key.p8 \
+            --create
           keychain add-certificates
           xcode-project use-profiles
 
@@ -46,7 +50,8 @@ workflows:
         script: |
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME"
+            --scheme "$XCODE_SCHEME" \
+            --mode release
 
     artifacts:
       - build/ios/ipa/*.ipa
@@ -54,4 +59,5 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
+        api_key_name: tesbeen-new
         submit_to_testflight: true
