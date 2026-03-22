@@ -23,7 +23,6 @@ workflows:
       - name: Sync Capacitor
         script: npx cap sync ios
 
-      # 🔥 هذا أهم تعديل (إجباري)
       - name: Force iOS 15
         script: |
           sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 14.0/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' ios/App/App.xcodeproj/project.pbxproj || true
@@ -58,6 +57,5 @@ workflows:
 
     publishing:
       app_store_connect:
-        auth: integration
-
+        auth: api_key
         submit_to_testflight: true
