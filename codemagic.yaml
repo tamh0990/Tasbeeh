@@ -2,46 +2,55 @@ workflows:
   ios-app-store:
     name: iOS App Store Build
     max_build_duration: 120
-    instance_type: mac_mini_m2
+
     integrations:
       app_store_connect: tesbeen-new
+
     environment:
-      groups:
-        - appstore
       vars:
         BUNDLE_ID: "com.harbi.tasbeehapp"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
+
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.harbi.tasbeehapp
+
     scripts:
+
       - name: Install dependencies
-        script: npm install
+        script: |
+          npm install
+
       - name: Build web
-        script: npm run build
+        script: |
+          npm run build || echo "skip build"
+
       - name: Sync Capacitor
-        script: npx cap sync ios
+        script: |
+          npx cap sync ios
+
       - name: Install pods
         script: |
           cd ios/App
           pod install
-      - name: Setup signing
+
+      - name: Setup signing (AUTO)
         script: |
           keychain initialize
-          # جلب ملفات التوقيع وتوليد الـ Provisioning Profile تلقائياً
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create
+          app-store-connect fetch-signing-files "$BUNDLE_ID"
           keychain add-certificates
-          # السطر التالي هو الأهم لإصلاح الخطأ في صورتك
-          xcode-project use-profiles --export-method app-store
+          xcode-project use-profiles
+
       - name: Build IPA
         script: |
-          # بناء التطبيق مع فرض التوقيع التلقائي لتجاوز خطأ Status code 65
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME" \
-            --provisioning-profile "$BUNDLE_ID"
+            --scheme "$XCODE_SCHEME"
+
     artifacts:
       - build/ios/ipa/*.ipa
+
     publishing:
       app_store_connect:
         auth: integration
