@@ -12,7 +12,6 @@ workflows:
         BUNDLE_ID: "com.harbi.tasbeehapp"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-        APPLE_DEVELOPER_TEAM_ID: "YTHCWB78HY"
     scripts:
       - name: Install dependencies
         script: npm install
@@ -27,21 +26,20 @@ workflows:
       - name: Setup signing
         script: |
           keychain initialize
-          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/key.p8
+          # جلب ملفات التوقيع وتوليد الـ Provisioning Profile تلقائياً
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
-            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            --private-key @/tmp/key.p8 \
             --create
           keychain add-certificates
-          xcode-project use-profiles
+          # السطر التالي هو الأهم لإصلاح الخطأ في صورتك
+          xcode-project use-profiles --export-method app-store
       - name: Build IPA
         script: |
-          # تم تصحيح الأمر هنا بحذف --mode release الذي سبب الخطأ
+          # بناء التطبيق مع فرض التوقيع التلقائي لتجاوز خطأ Status code 65
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME"
+            --scheme "$XCODE_SCHEME" \
+            --provisioning-profile "$BUNDLE_ID"
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
