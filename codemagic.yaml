@@ -24,8 +24,9 @@ workflows:
       - name: Build web
         script: npm run build
 
+      # 🔥 هنا تم الإصلاح (حذف --deployment)
       - name: Sync Capacitor
-        script: npx cap sync ios --deployment
+        script: npx cap sync ios
 
       - name: Set build version
         script: |
