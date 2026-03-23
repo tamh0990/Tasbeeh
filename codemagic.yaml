@@ -12,8 +12,12 @@ workflows:
       vars:
         BUNDLE_ID: "com.harbi.tasbeehapp"
 
-    scripts:
+    cache:
+      cache_paths:
+        - ~/.npm
+        - ios/Pods
 
+    scripts:
       - name: Install dependencies
         script: npm ci
 
@@ -42,6 +46,9 @@ workflows:
           xcode-project build-ipa \
             --workspace "App.xcworkspace" \
             --scheme "App"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
 
     publishing:
       app_store_connect:
