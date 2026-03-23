@@ -1,7 +1,6 @@
 workflows:
   ios-app-store:
     name: iOS App Store Build
-    # 1️⃣ أتمتة رقم الإصدار (Auto Versioning)
     max_build_duration: 120
     instance_type: mac_mini_m2
     integrations:
@@ -21,7 +20,6 @@ workflows:
       - name: Sync Capacitor
         script: npx cap sync ios
       - name: Set build version
-        # هذا السطر يجعل رقم الإصدار يتحدث تلقائياً مع كل بناء
         script: | 
           agvtool new-version -all $(($BUILD_NUMBER + 1))
       - name: Install pods
@@ -31,7 +29,7 @@ workflows:
       - name: Setup signing
         script: |
           keychain initialize
-          # حل مشكلة الـ p8 (تأكد من لصق المفتاح في المتغيرات كما اتفقنا)
+          # إنشاء الملف المؤقت من المفتاح الذي أرسلته لي
           echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/key.p8
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
@@ -42,7 +40,7 @@ workflows:
           keychain add-certificates
       - name: Build IPA
         script: |
-          # حل مشكلة التوقيع اليدوي وفرض إصدار iOS 15
+          # فرض التوقيع وتجاوز إعدادات Xcode اليدوية
           xcode-project use-profiles --export-method app-store
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
@@ -50,7 +48,6 @@ workflows:
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
-      # 2️⃣ الرفع التلقائي لـ TestFlight (Auto Upload)
       app_store_connect:
         auth: integration
         submit_to_testflight: true
