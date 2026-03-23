@@ -1,4 +1,4 @@
- workflows:
+workflows:
   ios-app-store:
     name: iOS App Store Build
     max_build_duration: 120
@@ -26,22 +26,25 @@
       - name: Setup signing
         script: |
           keychain initialize
-          # جلب أحدث شهادات التوزيع من حسابك في آبل تلقائياً
-          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+          # معالجة المفتاح لضمان قراءته بشكل سليم
+          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/key.p8
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            --private-key @/tmp/key.p8 \
+            --create
           keychain add-certificates
       - name: Build IPA
         script: |
-          # الخطوة السحرية: إجبار المشروع على استخدام بروفايل المتجر وتجاهل الإعدادات اليدوية
+          # فرض التوقيع لمتجر التطبيقات وتجاوز أخطاء Xcode
           xcode-project use-profiles --export-method app-store
-          
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME" \
-            --clean
+            --scheme "$XCODE_SCHEME"
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
-
