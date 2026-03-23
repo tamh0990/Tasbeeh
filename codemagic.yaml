@@ -8,11 +8,9 @@ workflows:
     environment:
       vars:
         BUNDLE_ID: "com.harbi.tasbeehapp"
+        # تأكدنا أن المسار يبدأ من المجلد الصحيح لـ Capacitor
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-        # البيانات المستخرجة من صورك وملفاتك الأخيرة
-        ISSUER_ID: "69a6de9e-213c-47e3-e053-5b8c7c11a4d1"
-        KEY_ID: "L23H89NSR3"
     scripts:
       - name: Install dependencies
         script: npm install
@@ -21,7 +19,6 @@ workflows:
       - name: Sync Capacitor
         script: npx cap sync ios
       - name: Set build version
-        # تحديث رقم الإصدار تلقائياً (Level 1)
         script: agvtool new-version -all $(($BUILD_NUMBER + 1))
       - name: Install pods
         script: |
@@ -30,7 +27,6 @@ workflows:
       - name: Setup signing
         script: |
           keychain initialize
-          # حقن مفتاح الـ p8 الذي أرسلته لي مباشرة في عملية البناء
           cat <<EOF > /tmp/key.p8
           -----BEGIN PRIVATE KEY-----
           MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgMle0MibP0u9RGLIf
@@ -42,22 +38,22 @@ workflows:
           
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --issuer-id "$ISSUER_ID" \
-            --key-id "$KEY_ID" \
+            --issuer-id "69a6de9e-213c-47e3-e053-5b8c7c11a4d1" \
+            --key-id "L23H89NSR3" \
             --private-key @/tmp/key.p8 \
             --create
           keychain add-certificates
       - name: Build IPA
         script: |
-          # فرض التوقيع لمتجر التطبيقات وتجاوز إعدادات Xcode اليدوية
+          # الانتقال لمجلد المشروع قبل البناء لضمان العثور على الـ Scheme
+          cd ios/App
           xcode-project use-profiles --export-method app-store
           xcode-project build-ipa \
-            --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME"
+            --workspace "App.xcworkspace" \
+            --scheme "App"
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
-      # الرفع التلقائي لـ TestFlight (Level 2)
       app_store_connect:
         auth: integration
         submit_to_testflight: true
