@@ -1,6 +1,6 @@
 workflows:
   ios-app-store:
-    name: iOS App Store Build
+    name: FINAL FIX BUILD
     max_build_duration: 120
     instance_type: mac_mini_m2
 
@@ -14,7 +14,7 @@ workflows:
         BUNDLE_ID: "com.harbi.tasbeehapp"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-        APPLE_DEVELOPER_TEAM_ID: "YTHCWB78HY"
+        DEVELOPMENT_TEAM: "YTHCWB78HY"
 
     scripts:
       - name: Install dependencies
@@ -26,7 +26,7 @@ workflows:
       - name: Sync Capacitor
         script: npx cap sync ios
 
-      - name: Force iOS 15
+      - name: Fix iOS target
         script: |
           sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 14.0/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' ios/App/App.xcodeproj/project.pbxproj || true
 
@@ -35,27 +35,47 @@ workflows:
           cd ios/App
           pod install
 
-      - name: Setup signing
+      # 🔥 أهم خطوة (إجبار التوقيع)
+      - name: FORCE SIGNING FIX
         script: |
           keychain initialize
+
           echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/key.p8
+
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
+            --create \
             --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
             --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            --private-key @/tmp/key.p8 \
-            --create
+            --private-key @/tmp/key.p8
+
           keychain add-certificates
+
           xcode-project use-profiles
 
-      - name: Build IPA
+      # 🔥 البناء اليدوي (بديل أقوى من xcode-project)
+      - name: BUILD IPA (FINAL FIX)
         script: |
-          xcode-project build-ipa \
-            --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME"
+          xcodebuild \
+            -workspace "$XCODE_WORKSPACE" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/App.xcarchive \
+            DEVELOPMENT_TEAM=$DEVELOPMENT_TEAM \
+            PRODUCT_BUNDLE_IDENTIFIER=$BUNDLE_ID \
+            CODE_SIGN_STYLE=Automatic \
+            -allowProvisioningUpdates \
+            archive
+
+          xcodebuild \
+            -exportArchive \
+            -archivePath build/App.xcarchive \
+            -exportOptionsPlist ios/App/exportOptions.plist \
+            -exportPath build/ipa
 
     artifacts:
-      - build/ios/ipa/*.ipa
+      - build/ipa/*.ipa
 
     publishing:
       app_store_connect:
