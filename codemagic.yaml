@@ -3,54 +3,56 @@ workflows:
     name: iOS App Store Build
     max_build_duration: 120
     instance_type: mac_mini_m2
-
     integrations:
-      app_store_connect: tesbeen-new
-
+      app_store_connect: tesbeen-new 
     environment:
-      node: 20
       vars:
         BUNDLE_ID: "com.harbi.tasbeehapp"
-
-    cache:
-      cache_paths:
-        - ~/.npm
-        - ios/Pods
-
     scripts:
       - name: Install dependencies
-        script: npm ci
-
+        script: npm install
       - name: Build web
         script: npm run build
-
-      # 🔥 هنا تم الإصلاح (حذف --deployment)
       - name: Sync Capacitor
         script: npx cap sync ios
-
       - name: Set build version
         script: |
           cd ios/App
-          agvtool new-version -all $CM_BUILD_NUMBER
-
+          agvtool new-version -all $BUILD_NUMBER
       - name: Install pods
         script: |
           cd ios/App
           pod install
-
+      - name: Setup signing
+        script: |
+          keychain initialize
+          # وضع المفتاح p8 مباشرة هنا لضمان العمل بدون متغيرات بيئة
+          cat <<EOF > /tmp/key.p8
+          -----BEGIN PRIVATE KEY-----
+          MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgMle0MibP0u9RGLIf
+          dghjvovUYNrS3OfSIsrk+ipHOw2gCgYIKoZIzj0DAQehRANCAAQSfht7Oc5Z/Xsz
+          1D9asORMhwK4CriEEmA6iG+dfSN26ouan3mbYtWnw0XfOVojA4EyvbFLezEf0HWp
+          iDodPtGK
+          -----END PRIVATE KEY-----
+          EOF
+          
+          # استخدام المعرفات التي استخرجناها من صورك السابقة
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --issuer-id "69a6de9e-213c-47e3-e053-5b8c7c11a4d1" \
+            --key-id "L23H89NSR3" \
+            --private-key @/tmp/key.p8 \
+            --create
+          keychain add-certificates
       - name: Build IPA
         script: |
           cd ios/App
-
           xcode-project use-profiles --export-method app-store
-
           xcode-project build-ipa \
             --workspace "App.xcworkspace" \
             --scheme "App"
-
     artifacts:
       - build/ios/ipa/*.ipa
-
     publishing:
       app_store_connect:
         auth: integration
