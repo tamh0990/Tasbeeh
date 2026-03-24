@@ -26,17 +26,16 @@ workflows:
       - name: Setup signing
         script: |
           keychain initialize
-          # وضع المفتاح p8 مباشرة هنا لضمان العمل بدون متغيرات بيئة
-          cat <<EOF > /tmp/key.p8
-          -----BEGIN PRIVATE KEY-----
-          MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgMle0MibP0u9RGLIf
-          dghjvovUYNrS3OfSIsrk+ipHOw2gCgYIKoZIzj0DAQehRANCAAQSfht7Oc5Z/Xsz
-          1D9asORMhwK4CriEEmA6iG+dfSN26ouan3mbYtWnw0XfOVojA4EyvbFLezEf0HWp
-          iDodPtGK
-          -----END PRIVATE KEY-----
-          EOF
           
-          # استخدام المعرفات التي استخرجناها من صورك السابقة
+          # بناء ملف المفتاح برمجياً لضمان سلامة التنسيق (PEM)
+          echo "-----BEGIN PRIVATE KEY-----" > /tmp/key.p8
+          echo "MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgMle0MibP0u9RGLIf" >> /tmp/key.p8
+          echo "dghjvovUYNrS3OfSIsrk+ipHOw2gCgYIKoZIzj0DAQehRANCAAQSfht7Oc5Z/Xsz" >> /tmp/key.p8
+          echo "1D9asORMhwK4CriEEmA6iG+dfSN26ouan3mbYtWnw0XfOVojA4EyvbFLezEf0HWp" >> /tmp/key.p8
+          echo "iDodPtGK" >> /tmp/key.p8
+          echo "-----END PRIVATE KEY-----" >> /tmp/key.p8
+          
+          # جلب ملفات التوقيع باستخدام المعرفات المباشرة
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --issuer-id "69a6de9e-213c-47e3-e053-5b8c7c11a4d1" \
