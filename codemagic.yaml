@@ -9,6 +9,8 @@ workflows:
 
     environment:
       node: 20
+      groups:
+        - appstore   # 🔥 هذا أهم تعديل
       vars:
         BUNDLE_ID: "com.harbi.tasbeehapp"
 
@@ -19,7 +21,6 @@ workflows:
       - name: Build web
         script: npm run build
 
-      # 🔍 Debug + تنظيف
       - name: Debug & Clean
         script: |
           echo "===== SYSTEM INFO ====="
@@ -43,13 +44,11 @@ workflows:
           cd ios/App
           pod install --repo-update
 
-      # 🔐 إصلاح signing
       - name: Setup signing
         script: |
           cd ios/App
           xcode-project use-profiles
 
-      # 🔍 Debug إضافي
       - name: Debug signing
         script: |
           echo "===== PROFILES ====="
@@ -58,7 +57,6 @@ workflows:
           echo "===== EXPORT FILE ====="
           ls -la /Users/builder || true
 
-      # 🚀 Build حقيقي
       - name: Build IPA
         script: |
           cd ios/App
