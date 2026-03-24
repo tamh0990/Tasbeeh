@@ -19,7 +19,6 @@ workflows:
       - name: Build web
         script: npm run build
 
-      # 🔥 مهم جدًا (بدون deployment)
       - name: Sync Capacitor
         script: |
           rm -rf ios/App/Pods
@@ -34,7 +33,6 @@ workflows:
       - name: Build IPA
         script: |
           cd ios/App
-          xcode-project use-profiles --export-method app-store
           xcode-project build-ipa \
             --workspace "App.xcworkspace" \
             --scheme "App"
