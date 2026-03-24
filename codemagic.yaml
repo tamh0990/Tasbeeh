@@ -30,6 +30,12 @@ workflows:
           cd ios/App
           pod install
 
+      # 🔥 هذا هو الحل المهم
+      - name: Setup signing (fix)
+        script: |
+          cd ios/App
+          xcode-project use-profiles
+
       - name: Build IPA
         script: |
           cd ios/App
